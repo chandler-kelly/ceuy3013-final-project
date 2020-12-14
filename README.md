@@ -2,8 +2,9 @@
 Chandler Kelly
 12/13/2020
 
-Please take a look at the readme file and make sure you have necessary imports.
-Code written with Google Colab, link provided in source.py for ease of use
+*  Please take a look at the readme file and make sure you have necessary imports.
+*  Code written with Google Colab, link provided in source.py for ease of use
+*  When using the program, please use only real, positive numbers for inputs. Numbers with decimals are okay. There are recommended values for user most user inputs. Extremely large values may cause model to fail. Only use 0 as an input when stated it is okay to do so, 0's for most variables will cause divide by zero error.
 
 # User Input
 This tool models the fate and transport of a contaminant in a river system.
