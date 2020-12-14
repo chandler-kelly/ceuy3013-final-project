@@ -19,53 +19,57 @@ import numpy as np
 import shapely.geometry as SG
 from scipy import special
 from sympy import symbols
+#all of these are required. I'm not sure how it works on GitHub but it works on Colab
 
 #@title Contamination Type
-
+# this is a form to quickly take the responses for the source and contaminant
 Source = "Continuous Source" #@param ["Spill", "Continuous Source"]
-Contaminant = 'Nutrients' #@param ["Lead", "Nutrients", "PCBs", "Other"] 
+Contaminant = 'Lead' #@param ["Lead", "Nutrients", "PCBs", "Other"] 
 #Concern = 'Drinking Water' #@param ["Drinking Water", "Recreation"]
 print("The contamination source is a ""{0} and the contaminant is {1}".format(Source, Contaminant))
 
 #@title River Properties
-
+# this is a form to quickly take the responses for the river properties
 Size = 'Small' #@param ["Tiny/Stream", "Small", "Medium", "Large"]
 Flow_Speed = 'Average' #@param ["Slow", "Average", "Fast"]
 Mixing = 'Heavy' #@param ["Less", "Average", "Heavy"]
 #Concern = 'Drinking Water' #@param ["Drinking Water", "Recreation"]
 print("The river is {0}, velocity is {1}, and there is {2} mixing".format(Size,Flow_Speed, Mixing))
 
-if Source == 'Spill':
+if Source == 'Spill': #this is where the user input for the spill begins
   print('A spill is modeled as a slug of mass instantaneously mixed over the cross section of the river.')
   print('Imput information on the spill and river conditions. Please imput numerical values only.')
-  print()
+  print()#Asking user for river cross-section area
   print(">>> You indicated your river is", Size, "\n>>> Example cross-sectional areas might include:\n>>> Tiny/Stream: 9 m^2 \n>>> Small: 90 m^2\n>>> Medium: 900 m^2\n>>> Large: 9000 m^2 ")
   Spill_A = float(input('What is the cross-sectional area of the river, in m^2? '))
-  print()
+  print()#Asking user for river flow speed
   print(">>> You indicated your river is", Flow_Speed, "\n>>> Example river velocities might include:\n>>> Slow: 0.1 to 0.5 m/s\n>>> Average: 0.5 to 1.5 m/s\n>>> Fast: 1.5 to 7 m/s")
   Spill_V = float(input('What is the average flow velocity of the river, in m/s? '))
-  print()
+  print()#Asking user for river mixing
   print(">>> You indicated your river has", Mixing, "mixing.\n>>> Example river mixing coefficients might include:\n>>> Less: 0.5 m^2/s\n>>> Average: 10 m^2/s\n>>> Heavy: 100 m^2/s")
   Spill_Dx = float(input('What is the longitudinal diffusion of the river, in m^2/s? '))
-  print()
+  print()#Asking how far upstream spill is
   Spill_X_km = float(input('How far upstream is the spill, in km? ' ))
-  Spill_X = Spill_X_km * 1000
+  Spill_X = Spill_X_km * 1000  #converting to meters
   print()
-  if Contaminant == 'Nutrients':
+  if Contaminant == 'Nutrients': #asking for the mass, k value, and limit for contaminant
       Spill_M = float(input('What is the mass of nitrate spilled, in kg? '))
       print()
       print(">>> k values around 0.02/day are typical for nitrate.\n>>> A k value of 0 can be used for a more conservative approach.")
       Spill_K_day = float(input('What is the first order decay constant, in 1/day? ' ))
-      Spill_K = Spill_K_day / 86400
+      Spill_K = Spill_K_day / 86400  # convert to 1/seconds
       print()
       print(">>> Legal limit set by the EPA for", Contaminant, "is 10 mg/L.")
-      DangerVal = float(input('What is your criteria for closure, in mg/L? '))
-  elif Contaminant == 'Other':
+      DangerVal = float(input('What is your criteria for closure, in mg/L? ')) #the limit
+  elif Contaminant == 'Other': #asking for the mass, k value, and limit for contaminant
       Spill_M = float(input('What is the mass of contaminant spilled, in kg? '))
       print()
-      Spill_K = 0
-      DangerVal = float(input('What is your criteria for closure, in mg/L? '))
-  elif Contaminant == 'Lead':
+      print(">>> A k value of 0 can be used for a more conservative approach.")
+      Spill_K_day = float(input('What is the first order decay constant, in 1/day? ' ))
+      Spill_K = Spill_K_day / 86400  # convert to 1/seconds
+      print()
+      DangerVal = float(input('What is your criteria for closure, in mg/L? ')) #the limit
+  elif Contaminant == 'Lead': #asking for the mass, k value, and limit for contaminant
       Spill_M = float(input('What is the mass of lead spilled, in kg? '))
       print()
       print('>>> Conservative values must be used in modeling lead contamination.\n>>> k value set to 0')
@@ -73,8 +77,8 @@ if Source == 'Spill':
       print()
       print(">>> Legal limit set by the EPA for", Contaminant,"is 0 mg/L.")
       print(">>> Criteria for closure set to enforceable limit of 0.015 mg/L.")
-      DangerVal =0.015
-  elif Contaminant == 'PCBs':
+      DangerVal =0.015 
+  elif Contaminant == 'PCBs': #asking for the mass, k value, and limit for contaminant
       Spill_M = float(input('What is the mass of PCBs spilled, in kg? '))
       print()
       print('>>> Conservative values must be used in modeling PCB contamination.\n>>> k value set to 0')
@@ -83,21 +87,20 @@ if Source == 'Spill':
       print(">>> Legal limit set by the EPA for", Contaminant,"is 0 mg/L.")
       print(">>> Criteria for closure set to enforceable limit of 0.0005 mg/L.")
       DangerVal =0.0005
-  t = np.array(range(1,1000000))
-  t_hours = t/3600
-  eqpart = Spill_M * math.e ** (-1*Spill_K * t)
+  t = np.array(range(1,1000000)) #setting up x axis
+  t_hours = t/3600 #convert seconds to hours
+  eqpart = Spill_M * math.e ** (-1*Spill_K * t)  #split the equation into parts
   eqpart = eqpart / (Spill_A * (4*math.pi*Spill_Dx*(t))**0.5)
   eqpart = eqpart * math.e ** (((-1*(Spill_X - Spill_V * t)**2)/(4 * Spill_Dx * (t))))
-  equation = eqpart * 1000
+  equation = eqpart * 1000  #unit conversion
 
-
-  Max_Conc = max(equation)
-  plt.title('Concentration as a Function of Time')
+  Max_Conc = max(equation) #maximum concentration
+  plt.title('Concentration as a Function of Time') #plotting
   plt.xlabel('Time since Spill, hr')
   plt.ylabel('Concentration, mg/L')
   plt.plot(t_hours,equation, 'b-')
   plt.axhline(y=DangerVal, color='black', linestyle= '--')
-
+#Making a horiz line at the maximum, to find coordinates of maximum
   Max_Line = SG.LineString([(0, Max_Conc), (max(t_hours), Max_Conc)])
   line = SG.LineString(list(zip(t_hours,equation)))
   Max_Coord = np.array(line.intersection(Max_Line))
@@ -105,47 +108,46 @@ if Source == 'Spill':
   Max_Coord[1] = round(Max_Coord[1],2)
   print()
   print('>>> The maximum', Contaminant,'concentration at the site', Spill_X_km,'km downstream of the spill is', Max_Coord[1],'mg/L\n>>> This occurs', Max_Coord[0], 'hours after the spill.')
-  if Max_Conc > DangerVal:
-    print()
+  if Max_Conc > DangerVal:  #if violates limit
+    print()    #finding the points where it exceeds limits
     Danger_Line = SG.LineString([(min(t_hours), DangerVal), (max(t_hours), DangerVal)])
     line = SG.LineString(list(zip(t_hours,equation)))  
     coords = np.array(line.intersection(Danger_Line))
-    Time_Lost = coords[1,0]-coords[0,0]
+    Time_Lost = coords[1,0]-coords[0,0]  #calculating the difference between closing and resuming
     Time_Lost = round(Time_Lost,2)
     coords[0,0] = round(coords[0,0],2)
     coords[1,0] = round(coords[1,0],2)
     print('>>> You will have to stop operations', coords[0,0], 'hours after the spill.')
     print('>>> You can legally resume',coords[1,0], 'hours after the spill.')
     print('>>> Operations will be down for approximately', Time_Lost, 'hours.')
-
     plt.scatter(coords[:,0], coords[:,1], s=100, color= 'red')
-    plt.xlim(0.8*coords[0,0],1.2*coords[1,0])
-  else:
+    plt.xlim(0.8*coords[0,0],1.2*coords[1,0]) #zooming in the plot to a reasonable size
+  else: #if it does not violate limit
     print()
     print('>>> You will not have to cease operations')
     Max_Conc = round(Max_Conc,2)
     print('>>> Maximum concentration of', Max_Conc, 'mg/L does not violate the criteria for closure,', DangerVal,'mg/L.')
-    plt.xlim(0.8*Max_Coord[0],1.2*Max_Coord[0])
+    plt.xlim(0.8*Max_Coord[0],1.2*Max_Coord[0]) #zooming in the plot to a reasonable size
 
 
-
+#This is where continuous source input starts
 elif Source == 'Continuous Source':
   print('A continuous source is modeled as a of mass loading at a constant rate instantaneously mixed over the depth of the river.')
   print('Imput information on the source and river conditions. Please imput numerical values only.')
-  print()
+  print()#Asking user for river depth
   print(">>> You indicated your river is", Size, "\n>>> Example depths might include:\n>>> Tiny/Stream: 1 m \n>>> Small: 3 m\n>>> Medium: 10 m\n>>> Large: 10+ m ")
   Cont_Z = float(input('What is the depth of the river, in m? '))
-  print()
+  print()#Asking user for river flow speed
   print(">>> You indicated your river is", Flow_Speed, "\n>>> Example river velocities might include:\n>>> Slow: 0.1 to 0.5 m/s\n>>> Average: 0.5 to 1.5 m/s\n>>> Fast: 1.5 to 7 m/s")
   Cont_V = float(input('What is the average flow velocity of the river, in m/s? '))
-  print()
+  print()#Asking user for mixing
   print(">>> You indicated your river has", Mixing, "mixing.\n>>> Example river mixing coefficients might include:\n>>> Less: 0.5 m^2/s\n>>> Average: 1.5 m^2/s\n>>> Heavy: 10 m^2/s")
   Cont_Dy = float(input('What is the diffusion of the river, in m^2/s? '))
+  print()#Asking user for distance from source
+  Cont_Site_X_km = float(input('How far upstream is the source, in km? ' ))
+  Cont_Site_X = Cont_Site_X_km * 1000   #converting to meter
   print()
-  Cont_Site_X_km = float(input('How far upstream is the spill, in km? ' ))
-  Cont_Site_X = Cont_Site_X_km * 1000
-  print()
-  if Contaminant == 'Nutrients':
+  if Contaminant == 'Nutrients': #asking for the mass loading, k value, and limit for contaminant
       Cont_M = float(input('What is the mass loading of nitrate, in kg/s? '))
       print()
       print(">>> k values around 0.02/day are typical for nitrate.\n>>> A k value of 0 can be used for a more conservative approach.")
@@ -154,12 +156,15 @@ elif Source == 'Continuous Source':
       print()
       print(">>> Legal limit set by the EPA for", Contaminant, "is 10 mg/L.")
       DangerVal = float(input('What is your criteria for closure, in mg/L? '))
-  elif Contaminant == 'Other':
+  elif Contaminant == 'Other': #asking for the mass loading, k value, and limit for contaminant
       Cont_M = float(input('What is the mass loading of contaminant, in kg/s? '))
       print()
-      Cont_K = 0
+      print(">>> A k value of 0 can be used for a more conservative approach.")
+      Spill_K_day = float(input('What is the first order decay constant, in 1/day? ' ))
+      Spill_K = Spill_K_day / 86400  # convert to 1/seconds
+      print()
       DangerVal = float(input('What is your criteria for closure, in mg/L? '))
-  elif Contaminant == 'Lead':
+  elif Contaminant == 'Lead': #asking for the mass loading, k value, and limit for contaminant
       Cont_M = float(input('What is the mass loading of lead, in kg/s? '))
       print()
       print('>>> Conservative values must be used in modeling lead contamination.\n>>> k value set to 0')
@@ -168,7 +173,7 @@ elif Source == 'Continuous Source':
       print(">>> Legal limit set by the EPA for", Contaminant,"is 0 mg/L.")
       print(">>> Criteria for closure set to enforceable limit of 0.015 mg/L.")
       DangerVal =0.015
-  elif Contaminant == 'PCBs':
+  elif Contaminant == 'PCBs': #asking for the mass loading, k value, and limit for contaminant
       Cont_M = float(input('What is the mass loading of PCBs, in kg/s? '))
       print()
       print('>>> Conservative values must be used in modeling PCB contamination.\n>>> k value set to 0')
@@ -178,9 +183,9 @@ elif Source == 'Continuous Source':
       print(">>> Criteria for closure set to enforceable limit of 0.0005 mg/L.")
       DangerVal =0.0005
   X_var = np.array(range(1,int(2*Cont_Site_X)))
-  X_var_km = X_var / 1000
-  equation = Cont_M * math.e **(-1*Cont_K*X_var/Cont_V) /(Cont_Z*(4*math.pi*Cont_Dy*X_var*Cont_V)**(0.5))
-  conc_site = Cont_M/(Cont_Z*(4*math.pi*Cont_Dy*Cont_Site_X*Cont_V)**(0.5))
+  X_var_km = X_var / 1000  #convert to km for plotting purposes
+  equation = Cont_M * math.e **(-1*Cont_K*X_var/Cont_V) /(Cont_Z*(4*math.pi*Cont_Dy*X_var*Cont_V)**(0.5)) #concentration as a function of x, nonscalar
+  conc_site = Cont_M/(Cont_Z*(4*math.pi*Cont_Dy*Cont_Site_X*Cont_V)**(0.5))  # concentration at site, scalar
   conc_site = round(conc_site,2)
   Max_Conc = max(equation)
   plt.title('Concentration as a Function of Distance')
@@ -190,15 +195,15 @@ elif Source == 'Continuous Source':
   plt.axhline(y=DangerVal, color='black', linestyle= '--')
   
 
-  if conc_site > DangerVal:
+  if conc_site > DangerVal: # if site concentration exceeds limit
     print()
     plt.scatter(Cont_Site_X_km, conc_site, s=100, color= 'red')
-    new_M = Cont_M * DangerVal / conc_site
+    new_M = Cont_M * DangerVal / conc_site # calculate new mass loading for current conditions that would allow operation
     new_M = round(new_M,2)
     print('>>> You cannot operate, concentration too high.')
     print('>>> Concentration at the site', Cont_Site_X_km, 'km downstream of the source is',conc_site, 'mg/L. This violates the standard of', DangerVal,'mg/L.')
     print('>>> Mass loading must be reduced to',new_M,'kg/s to operate at this location.')
-  else:
+  else: # if site concentration does not exceed limit
     print()
     plt.scatter(Cont_Site_X_km, conc_site, s=100, color= 'green')
     print('>>> You will not have to cease operations.')
