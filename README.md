@@ -1,5 +1,9 @@
 # ceuy3013-final-project
 Chandler Kelly
+12/13/2020
+
+Please take a look at the readme file and make sure you have necessary imports.
+Code written with Google Colab, link provided in source.py for ease of use
 
 # User Input
 This tool models the fate and transport of a contaminant in a river system.
